@@ -81,10 +81,12 @@ void setup()
             // construct dronecan packet
             current = analogRead(CURRENT_PIN) / CURRENT_SCALE_FACTOR;
             voltage = analogRead(VOLTAGE_PIN) / VOLTAGE_SCALE_FACTOR;
+            int32_t vref = __LL_ADC_CALC_VREFANALOG_VOLTAGE(analogRead(AVREF), LL_ADC_RESOLUTION_12B);
+            int32_t cpu_temp = __LL_ADC_CALC_TEMPERATURE(vref, analogRead(ATEMP), LL_ADC_RESOLUTION_12B);
             uavcan_equipment_power_BatteryInfo pkt{};
             pkt.voltage = voltage;
             pkt.current = current;
-            //pkt.temperature = INA.getTemperature();
+            pkt.temperature = cpu_temp;
 
             sendUavcanMsg(dronecan.canard, pkt);
         }
