@@ -86,7 +86,7 @@ void setup()
             uavcan_equipment_power_BatteryInfo pkt{};
             pkt.voltage = voltage;
             pkt.current = current;
-            pkt.temperature = cpu_temp;
+            pkt.temperature = (float)cpu_temp + 273.15f;
 
             sendUavcanMsg(dronecan.canard, pkt);
         }
