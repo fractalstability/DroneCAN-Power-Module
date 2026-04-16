@@ -1,12 +1,10 @@
+Import("env")
 import struct
 import binascii
 from pathlib import Path
-from SCons.Script import DefaultEnvironment
 
-env = DefaultEnvironment()
 build_dir = Path(env.subst("$BUILD_DIR"))
 firmware_bin = build_dir / "firmware.bin"
-output_bin = build_dir / "firmware_with_crc.bin"
 
 BOARD_ID = 1062  # Replace with your actual board ID
 GIT_HASH = 0     # Set if known, otherwise 0
@@ -72,11 +70,7 @@ def append_descriptor(source, target, env):
     print(f"  Board ID:   {BOARD_ID}")
     print(f"  Signature:  {APP_DESCRIPTOR_SIGNATURE.hex()}")
 
-    # Write out new firmware
-    with open(output_bin, "wb") as f:
-        f.write(firmware)
-
-    # Overwrite original firmware.bin so subsequent steps pick it up
+    # Overwrite firmware.bin in place so subsequent steps pick it up
     firmware_bin.write_bytes(firmware)
 
 # Hook into the PlatformIO build
