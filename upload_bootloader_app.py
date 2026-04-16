@@ -1,12 +1,14 @@
 Import("env")
 import os
 import subprocess
+import sys
 
 # Paths
 bootloader_path = os.path.abspath(os.path.join(env.subst("$PROJECT_DIR"), "MicroNodeBootloader.bin")).replace("\\", "/")
 firmware_path = os.path.abspath(os.path.join(env.subst("$BUILD_DIR"), "firmware.bin")).replace("\\", "/")
 elf_path = os.path.join(env.subst("$BUILD_DIR"), "firmware.elf")
-openocd = os.path.join(env.subst("$PROJECT_PACKAGES_DIR"), "tool-openocd", "bin", "openocd.exe")
+_openocd_exe = "openocd.exe" if sys.platform == "win32" else "openocd"
+openocd = os.path.join(env.subst("$PROJECT_PACKAGES_DIR"), "tool-openocd", "bin", _openocd_exe)
 scripts_dir = os.path.join(env.subst("$PROJECT_PACKAGES_DIR"), "tool-openocd", "openocd", "scripts")
 
 interface_cfg = "interface/stlink.cfg"
