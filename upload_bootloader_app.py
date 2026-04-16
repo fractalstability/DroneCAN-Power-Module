@@ -43,6 +43,9 @@ def custom_upload(source, target, env):
         subprocess.run(cmd1, check=True)
         print("Flashing application firmware")
         subprocess.run(cmd2, check=True)
+    except FileNotFoundError:
+        print(f"\n\n--- Upload failed ---\nOpenOCD not found at: {openocd}\nInstall it with: pio pkg install -g -t tool-openocd\n---------------------\n")
+        env.Exit(1)
     except subprocess.CalledProcessError as e:
         print(f"\n\n--- Upload failed ---\nException: {e}\n---------------------\n")
         env.Exit(1)

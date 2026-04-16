@@ -22,6 +22,9 @@ DESC_SIZE   = 36  # unsigned descriptor length
 
 
 def append_descriptor(source, target, env):
+    if not firmware_bin.exists():
+        raise RuntimeError(f"firmware.bin not found at {firmware_bin} — ensure the build completed before this step")
+
     # Read the raw firmware binary
     firmware = bytearray(firmware_bin.read_bytes())
 
