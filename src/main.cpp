@@ -23,8 +23,6 @@
 // 1 / V_batt constant = 59.1053391
 
 #define SHUNT_RESISTANCE 0.0025
-#define CURRENT_SCALE_FACTOR 1.623
-#define VOLTAGE_SCALE_FACTOR 14.705
 #define CURRENT_PIN PA2
 #define VOLTAGE_PIN PA3
 
@@ -32,7 +30,12 @@ float current;
 float voltage;
 
 std::vector<DroneCAN::parameter> custom_parameters = {
-    {"NODEID", UAVCAN_PROTOCOL_PARAM_VALUE_INTEGER_VALUE, 127, 0, 127}};
+    {"NODEID",      UAVCAN_PROTOCOL_PARAM_VALUE_INTEGER_VALUE, 127,     0,       127},
+    {"CURR_SCALE",  UAVCAN_PROTOCOL_PARAM_VALUE_REAL_VALUE,    1.623f,  0.1f,    1000.0f},
+    {"VOLT_SCALE",  UAVCAN_PROTOCOL_PARAM_VALUE_REAL_VALUE,    14.705f, 0.1f,    1000.0f},
+    {"CURR_OFFSET", UAVCAN_PROTOCOL_PARAM_VALUE_REAL_VALUE,    0.0f,    -100.0f, 100.0f},
+    {"VOLT_OFFSET", UAVCAN_PROTOCOL_PARAM_VALUE_REAL_VALUE,    0.0f,    -100.0f, 100.0f},
+};
 
 DroneCAN dronecan;
 
@@ -59,7 +62,7 @@ void setup()
     IWatchdog.begin(2000000); 
     Serial.begin(115200);
     dronecan.version_major = 1;
-    dronecan.version_minor = 0;
+    dronecan.version_minor = 1;
     dronecan.init(
         onTransferReceived, 
         shouldAcceptTransfer, 
@@ -79,10 +82,21 @@ void setup()
             looptime = millis();
 
             // construct dronecan packet
-            current = analogRead(CURRENT_PIN) / CURRENT_SCALE_FACTOR;
-            voltage = analogRead(VOLTAGE_PIN) / VOLTAGE_SCALE_FACTOR;
-            int32_t vref = __LL_ADC_CALC_VREFANALOG_VOLTAGE(analogRead(AVREF), LL_ADC_RESOLUTION_12B);
-            int32_t cpu_temp = __LL_ADC_CALC_TEMPERATURE(vref, analogRead(ATEMP), LL_ADC_RESOLUTION_12B);
+            current = analogRead(CURRENT_PIN) / dronecan.getParameter("CURR_SCALE") + dronecan.getParameter("CURR_OFFSET");
+            voltage = analogRead(VOLTAGE_PIN) / dronecan.getParameter("VOLT_SCALE") + dronecan.getParameter("VOLT_OFFSET");
+
+            // Internal ADC channels (AVREF, ATEMP) require 12-bit resolution
+            // for the LL macros to compute correctly. Restore after.
+            analogReadResolution(12);
+            uint32_t avref_raw = analogRead(AVREF);
+            uint32_t atemp_raw = analogRead(ATEMP);
+            analogReadResolution(10);
+
+            int32_t vref = (avref_raw > 0)
+                ? (int32_t)__LL_ADC_CALC_VREFANALOG_VOLTAGE(avref_raw, LL_ADC_RESOLUTION_12B)
+                : 3300;  // fallback to 3.3V if VREF read fails
+            int32_t cpu_temp = __LL_ADC_CALC_TEMPERATURE(vref, atemp_raw, LL_ADC_RESOLUTION_12B);
+
             uavcan_equipment_power_BatteryInfo pkt{};
             pkt.voltage = voltage;
             pkt.current = current;
